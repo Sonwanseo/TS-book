@@ -228,7 +228,7 @@ export { IProfile, saveName as save };
 
 ##### 네임스페이스로 감싸서 재노출하기
 
-네임스페이스는 독립된 이름 공간이며 export를 이용해 모듈로 선언할 수 있음
+네임스페이스는 **독립된 이름 공간**이며 export를 이용해 모듈로 선언할 수 있음
 
 export로 선언하면 다른 파일에서 임포트할 수 있는 모듈이 됨  
 네임스페이스는 이름 공간을 정의해 하위 여러 모듈을 포함할 수 있는 특성을 지님  
@@ -237,3 +237,115 @@ export로 선언하면 다른 파일에서 임포트할 수 있는 모듈이 됨
 네임스페이스는 외부에 노출할 모듈을 모아 라이브러리 형태로 정의할 수 있음
 
 ### 8.3.5 디폴트 모듈의 이해와 사용법
+
+##### export-equals 문과 import-equals 문
+
+타입스크립트 1.5가 발표되기 전에는 모듈을 선언할 때 export-equals 문으로 할당했고, 모듈을 호출할 때는 import-equals 문으로 임포트했음
+
+```typescript
+export = validator;
+
+import Validator = require("validator");
+```
+
+##### 디폴트 모듈 선언
+
+타입스크립트 1.5에서는 import-equals 문과 export-equals 문 대신 다른 형태로 모듈을 선언하거나 임포트할 수 있음
+
+```typescript
+export default {
+  title: "hello world",
+  length: 11,
+};
+```
+
+**default로 선언된 모듈을 파일마다 하나씩만 선언돼야 함**
+
+import-equals 문은 require()를 쓰는 대신 ES6의 import 형식으로 가져올 수 있음
+
+```typescript
+import Validator from "./validator";
+```
+
+##### 디폴트 모듈과 명명된 모듈을 함께 가져오기
+
+디폴트 모듈은 default 키워드를 사용해서 선언함  
+디폴트 모듈의 특성은 파일에 최대 1개까지만 선언 가능함
+
+```typescript
+export { p as default, h as hello };
+
+import default, { hello } from '...';
+```
+
+디폴트 모듈과 일반 모듈을 함께 임포트할 때는 **디폴트 모듈은 이름만 선언하고 일반 모듈은 {} 내부에 모듈 이름을 선언**해야 함
+
+##### 디폴트 모듈로 타입과 모듈을 함께 노출
+
+**디폴트 모듈로 export할 함수명과 인터페이스 타입명을 일치시켜 선언**
+
+```typescript
+interface HelloMessage {
+  first: string;
+  second: string;
+}
+function HelloMessage(name: string): HelloMessage {
+  let message: HelloMessage = { first: "hello", second: name };
+  return message;
+}
+export default HelloMessage;
+```
+
+위와 같이 export된 디폴트 모듈을 임포트하면 같은 이름을 이용해 함수 또는 인터페이스 타입으로 사용 가능
+
+타입스크립트 컴파일러는 선언된 위치에 따라 함수로 사용되는 지 타입으로 사용되는 지 구분해 타입 검사를 수행함
+
+## 8.4 모듈 시스템
+
+### 8.4.1 모듈 로더와 모듈 형식
+
+모듈 로더는 **모듈 파일에 선언된 모듈을 실행할 수 있음**  
+브라우저에서 동작하는 모듈 로더는 느린 로딩의 방식으로 모듈 파일을 가져와 모듈을 실행
+
+타입스크립트에서는 모듈을 정의하거나 호출할 때 ES2015 모듈을 이용  
+타입스크립트는 자바스크립트로 컴파일돼 실행됨  
+이때 ES2015 모듈이 표준이지만 더 많은 브라우저에서 지원하게 하고자 ES5 표준으로 컴파일하고 ES2015 모듈은 모듈로더를 통해 호출 가능
+
+모듈 형식은 모듈 정의에 관한 표준 명세에 해당  
+모듈 로더가 특정 모듈 형식을 지원하려면 모듈 로더가 지원하는 모듈 형식에 맞춰 컴파일해야 함
+
+### 8.4.2 모듈 형식에 맞춰 컴파일하기
+
+##### 모듈 형식에 따른 컴파일 방법
+
+타입스크립트는 ES2015 모듈을 이용해 하위 표준으로 컴파일이 가능
+
+프로젝트 기반이 아니라 특정 모듈 파일만을 컴파일하려면 명령어를 다음과 같은 형식으로 입력  
+tsc --module <모듈 형식> <변환할 모듈 파일 이름>
+
+--module 옵션에 사용할 수 있는 모듈 형식의 설정값
+
+- none
+- commonjs
+- amd
+- system
+- umd
+- es6 또는 es2015
+
+설정값 중에 none은 ES2015 모듈 형식과 CommonJS 모듈 형식을 사용하지 않을 때 설정
+
+만약 --module 옵션 사용 시 모듈 형식을 지정하지 않으면 target 값에 따라 다르게 기본값이 정해짐
+
+##### --module 옵션에 대한 부가적인 설명
+
+명령어로 모듈을 컴파일할 때 --out 옵션을 사용하면 입력 파일을 받아 단일 파일로 생성 가능  
+tsc --out <출력할 js파일명> <변환할 ts 파일명> --module <모듈 형식>
+
+--out 옵션과 --module 옵션을 사용할 때 허용하는 설정값은 amd, system 두 가지뿐  
+--out 옵션은 단일 파일로 컴파일해 결과를 생성해 내는 옵션이므로 단일 파일에 적합하지 않은 나머지 모듈 형식은 허용 X
+
+여러 파일에 걸쳐 모듈이 나뉘어 있는 대상을 컴파일할 때 사용하는 명령어
+tsc <파일1이름>.ts <파일2이름>.ts -module amd | system
+
+만약 소스 맵이 필요하다면 -sourcemap 옵션 추가  
+tsc <파일이름>.ts <파일이름>.ts -sourcemap--out <파일이름>.js
