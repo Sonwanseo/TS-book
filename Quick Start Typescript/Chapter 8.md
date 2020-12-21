@@ -349,3 +349,78 @@ tsc <파일1이름>.ts <파일2이름>.ts -module amd | system
 
 만약 소스 맵이 필요하다면 -sourcemap 옵션 추가  
 tsc <파일이름>.ts <파일이름>.ts -sourcemap--out <파일이름>.js
+
+### 8.4.3 특정 모듈 형식을 실행하기 위한 준비
+
+##### 모듈 로더를 구동하기 위해 HTTP 서버 준비
+
+##### 모듈 로더에서 사용할 a.ts 파일과 b.ts 파일 준비
+
+## 8.5 각종 모듈 형식에 대한 소개
+
+### 8.5.1 ES2015 모듈 형식
+
+타입스크립트는 ES2015 모듈 형식을 기본으로 채택해 모듈을 선언하고 모듈을 호출함
+
+SystemJS에서는 ES2015 모듈 형식을 지원하기 위해 traceur 컴파일러를 플러그인으로 이용
+
+traceur는 브라우저에서 ES2015 모듈 형식(import/export)을 구동하기 위해 필요한 일종의 폴리필
+
+### 8.5.2 CommonJS 모듈 형식
+
+CommonJS는 Node.js에서 지원하는 모듈 형식이고 대부분의 모듈 로더에서 지원함  
+CommonJS 모듈 형식은 타입스크립트에서 지원하는 ES2015 모듈 형식과 import와 export에 있어서 다음처럼 약간의 차이가 있음
+
+|export/import|CommonJS 모듈 형식|es2015 모듈 형식|
+|특정 모듈을 export|exports.message = "hello";|export var message = "hello";|
+|모듈 전체를 export|module.exports = "hello";|export = "hello";|
+|특정 모듈을 import|var add = require('calc').add;|import { add } from 'calc';|
+|모듈 전체를 import|var foo = require('add');|import add as foo;|
+
+export로 노출한 모듈을 require 함수를 이용해 호출 가능
+
+export로 모듈을 노출해 주고 require 함수로 모듈을 호출해 주는 CommonJS 형식은 Node.js에서 기본적으로 지원되는 형식이므로 Node.js 개발 시 이용 가능  
+but, \*.ts 파일로 옮겨오면 에러 발생  
+require, exports 등을 인식할 수 있는 타입 정의 파일이 설치돼 있지 않기 때문
+
+### 8.5.3 AMD 모듈 형식
+
+AMD는 비동기 모듈 호출 방식으로 웹 사이트의 성능을 개선하기 위한 목적으로 출시  
+웹 사이트에서 AMD 모듈을 호출하면 모듈 파일을 비동기로 가져와서 호출함  
+비동기라는 말은 웹 사이트 구동 시에 모듈 파일을 모두 호출하지 않고 성능을 향상시킬 목적으로 모듈 파일을 사용할 시점에 가져와 사용한다는 의미
+
+브라우저에서는 RequireJS, curl.js, PINF 등과 같은 모듈 로더를 통해 AMD 모듈을 코딩할 수 있고 서버에서는 RequireJS, PINF와 같은 모듈 로더를 통해 AMD 모듈을 호출할 수 있음  
+AMD 모듈을 정의할 때 define() 함수를 이용
+
+```javascript
+define(id?, dependencies?, factory);
+```
+
+define 함수의 첫 번째 매개변수인 id는 모듈 아이디를 의미  
+필수 값 x, 생략 가능, 생략하면 디폴트 id값을 이용  
+두 번째 매개변수인 dependencies는 모듈 id의 배열을 의미하며 의존하고 있는 모듈의 id 목록을 배열로 전달해줌  
+세 번째 매개변수인 factory는 익명 함수로 모듈의 구현 코드가 위치
+
+작성한 타입스크립트 모듈 파일을 AMD 방식으로 컴파일하려면 tsc 명령어에 다음과 같은 옵션을 추가해야 함
+--module amd
+
+AMD 모듈은 node 명령어로 실행할 수 없고 AMD를 지원하는 SystemJS 모듈 로더를 이용해 구동할 수 있음
+
+### 8.5.4 UMD 모듈 형식
+
+UMD 모듈 형식은 클라이언트, 서버에서 보편적으로 작동하며, RequireJS 등의 모듈 로더에서 지원함  
+UMD는 CommonJS 형식과 AMD 형식을 모두 고려하기에 범용으로 호환성을 갖춘 모듈을 정의할 수 있음  
+단점: 모듈 코드양이 많아짐  
+UMD 모듈 패턴은 익명 함수의 매개변수인 factory로 모듈을 정의한 익명 함수를 전달하는 형태로 정의
+
+UMD 방식은 CommonJS + AMD + 기타 모듈을 합해 환경에 따라 다른 방식으로 모듈을 호출하므로 특정 모듈 형식을 지원하는 환경인지에 대한 검사가 포함됨
+
+Node.js는 CommonJS 형식을 지원  
+그리고 UMD 모듈 형식 내부에는 CommonJS 형식을 감지해 모듈 형식을 지정하므로 UMD 형식의 모듈은 node 명령어를 통해 결과 출력이 가능
+
+### 8.5.5 SystemJS 모듈 형식
+
+SystemJS 모듈 형식은 ES 모듈을 호출할 때 브라우저나 Node.js에서 비동기 형태로 ES 모듈을 호출하는 모듈 로더  
+SystemJS 모듈 형식은 지원하는 모듈 로더가 SystemJS에 한정되기 때문에 호환성이 떨어짐
+
+system 형식은 node 명령어로 실행할 수 없음
